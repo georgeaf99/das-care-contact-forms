@@ -1,21 +1,14 @@
 import itertools
 import logging
 
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import service
 
 logger = logging.getLogger('das-care-contact-forms-logger')
 
-SPREADSHEET_NAME_TO_ID = dict(
-    COPY_VISITOR_FORM_RESPONSES="1ANGfPyMJK-fjLYlX7VoOGf0CUy38_tY5YiCWIxN6Kx8"
-)
+address_extractor = {
+    "V1": lambda resp: resp.get('Street Address')
+}[service.forms_version]
 
-def get_credentials():
-    """Gets credentials needed to access the spreadsheet"""
-    scope = ['https://spreadsheets.google.com/feeds']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
-
-    return credentials
 
 def format_responses(responses_wks):
     """Format the data in the worksheet into list of dicts
@@ -37,7 +30,7 @@ def format_responses(responses_wks):
     ]
 
     # Validate that the address field is not empty
-    for response in (r for r in mapped_response_data if not r.get('Street Address')):
+    for response in (r for r in mapped_response_data if not address_extractor(r)):
         logger.warning("The following response has been ignored because it has no address: %s" % response)
         mapped_response_data.remove(response)
 
@@ -49,8 +42,6 @@ def group_responses_by_address(formatted_resps):
     @param formatted_resps The formatted responses to groupby
     @return Dictionary mapping address to all entries from that address
     """
-    address_extractor = lambda val: val['Street Address']
-
     return dict(
         (address, list(resps))
         for address, resps in itertools.groupby(
@@ -61,10 +52,7 @@ def group_responses_by_address(formatted_resps):
 
 
 if __name__ == "__main__":
-    gc = gspread.authorize(get_credentials())
-
-    spreadsheet = gc.open_by_key(SPREADSHEET_NAME_TO_ID["COPY_VISITOR_FORM_RESPONSES"])
-    responses_wks = spreadsheet.get_worksheet(0)
+    responses_wks = service.main_spreadsheet.get_worksheet(0)
 
     formatted_resps = format_responses(responses_wks)
     grouped_resps = group_responses_by_address(formatted_resps)
