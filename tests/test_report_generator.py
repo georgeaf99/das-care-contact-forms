@@ -118,3 +118,37 @@ def test_compress_grouped_responses():
             'd': '4'
         },
     }
+
+
+def test_generate_reports():
+    mock_wks = MockWorksheet([
+        ['Street Address', 'Timestamp',          'Type of Contact', 'How many dogs do they have?', 'Census Tract'],
+        ['address_one',    '10/4/2016 15:09:24', 'Phone Call',      '4',                           '44.5'],
+        ['address_two',    '10/4/2016 11:47:55', 'Phone Call',      '',                            '55.6'],
+        ['address_one',    '12/1/2017 06:03:22', 'C.A.R.E. Letter', '3',                           '44.5'],
+    ])
+
+    formatted_resps = report_generator.format_responses(mock_wks)
+    grouped_resps = report_generator.group_responses_by_address(formatted_resps)
+    compressed_resps = report_generator.compress_grouped_responses(grouped_resps)
+    reports = report_generator.generate_reports(grouped_resps, compressed_resps)
+
+    assert reports == {
+        'address_one':
+            'Address: address_one\n' +
+            '\n' +
+            'C.A.R.E. Letter Date: 2017-12-01 06:03:22\n' +
+            'Phone Call Dates: [2016-10-04 15:09:24]\n' +
+            '\n' +
+            'Census Tract: 44.5\n' +
+            '\n' +
+            'Num Dogs: 3'
+        ,
+        "address_two":
+            'Address: address_two\n' +
+            '\n' +
+            'Phone Call Dates: [2016-10-04 11:47:55]\n' +
+            '\n' +
+            'Census Tract: 55.6'
+        ,
+    }
