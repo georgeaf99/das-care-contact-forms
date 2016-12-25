@@ -54,18 +54,20 @@ def convert_timestamp(timestamp_string):
     @timestamp_string The string to create a `datetime` object from
     @return a `datetime` object
     """
-    timestamp_regex = r"(?P<month>\d+)/(?P<day>\d+)/(?P<year>\d+)\s(?P<hour>\d+)\:(?P<minute>\d+)\:(?P<second>\d+)"
+    timestamp_regex = r"(?P<month>\d+)/(?P<day>\d+)/(?P<year>\d+)(\s(?P<hour>\d+)\:(?P<minute>\d+)\:(?P<second>\d+))?"
 
     match = re.search(timestamp_regex, timestamp_string)
 
     return datetime.datetime(**dict(
         (key, int(val))
         for key, val in match.groupdict().items()
+        if val
     ))
 
 
 def normalize_V1(resp):
     resp['Timestamp'] = convert_timestamp(resp['Timestamp'])
+    resp['Date of Contact'] = convert_timestamp(resp['Date of Contact'])
 
     return resp
 
@@ -122,7 +124,7 @@ def group_responses_by_address(formatted_resps):
             sorted(
                 formatted_resps,
                 # Extracts a tuple that will be compared from left to right
-                key=lambda resp: (address_extractor(resp), resp['Timestamp'])
+                key=lambda resp: (address_extractor(resp), resp['Date of Contact'], resp['Timestamp'])
             ),
             key=address_extractor
         )
