@@ -149,6 +149,48 @@ def test_compress_grouped_responses():
     }
 
 
+def test_normalize_compress_grouped_responses():
+    mock_wks = MockWorksheet([
+        [
+            'Street Address',
+            'Timestamp',
+            'How many dogs do they have?',
+            'How many cats do they have?',
+            'Spayed/Neutered?',
+            'Registered?',
+            'Vaccinated?',
+            'Compliance?'
+        ],
+        ['address_one', '10/4/2016 15:09:24', '2', '',  '1', '0', '0', 'No'],
+        ['address_one', '10/4/2016 15:09:25', '2', '1', '2', '1', '1', 'No'],
+        ['address_one', '12/1/2017 06:03:22', '',  '',  '',  '',  '',  'Yes'],
+    ])
+
+    formatted_resps = report_generator.format_responses(mock_wks)
+    grouped_resps = report_generator.group_responses_by_address(formatted_resps)
+    compressed_resps = report_generator.compress_grouped_responses(grouped_resps)
+
+    assert compressed_resps == {
+        "address_one": {
+            'Street Address': 'address_one',
+            'Timestamp': datetime.datetime(
+                month=12, day=1, year=2017,
+                hour=6, minute=3, second=22
+            ),
+            'Date of Contact': datetime.datetime(
+                month=12, day=1, year=2017,
+                hour=6, minute=3, second=22
+            ),
+            'How many dogs do they have?': '2',
+            'How many cats do they have?': '1',
+            'Spayed/Neutered?': '3',
+            'Registered?': '3',
+            'Vaccinated?': '3',
+            'Compliance?': 'Yes',
+        },
+    }
+
+
 def test_generate_reports():
     mock_wks = MockWorksheet([
         ['Street Address', 'Timestamp',          'Type of Contact', 'How many dogs do they have?', 'Census Tract'],

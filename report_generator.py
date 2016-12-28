@@ -65,7 +65,7 @@ def convert_timestamp(timestamp_string):
     ))
 
 
-def normalize_V1(resp):
+def normalize_resp_V1(resp):
     resp['Timestamp'] = convert_timestamp(resp['Timestamp'])
     resp['Date of Contact'] = convert_timestamp(resp['Date of Contact'])
 
@@ -80,7 +80,7 @@ def normalize_V1(resp):
     for old_field, new_field in updated_fields.items():
         if resp.get(old_field):
             if resp.get(new_field):
-                raise Error("The old field and new field cannot both be present: ({old} -> {new})".format(
+                raise Exception("The old field and new field cannot both be present: ({old} -> {new})".format(
                     old=old_field, new=new_field,
                 ))
 
@@ -90,8 +90,30 @@ def normalize_V1(resp):
     return resp
 
 
-normalize = {
-    'V1': normalize_V1
+def normalize_compressed_resp_V1(compressed_resp):
+    # If the owner is in compliance, then all their animals are spayed, vaccinated, and registered
+    if compressed_resp.get('Compliance?') == "Yes":
+        fields_to_be_updated = ['Spayed/Neutered?','Vaccinated?', 'Registered?']
+
+        # Accumulate the number of animals and convert back to a string
+        num_animals = str(functools.reduce(
+            lambda a, x: a + int(compressed_resp.get(x, 0)),
+            ['How many dogs do they have?', 'How many cats do they have?'],
+            0
+        ))
+        compressed_resp.update({field: num_animals for field in fields_to_be_updated})
+
+    return compressed_resp
+
+
+# Normalize individual responses
+normalize_resp = {
+    'V1': normalize_resp_V1
+}[service.forms_version]
+
+# Normalize compressed responses
+normalize_compressed_resp = {
+    'V1': normalize_compressed_resp_V1
 }[service.forms_version]
 
 address_extractor = {
@@ -114,7 +136,7 @@ def format_responses(responses_wks):
 
     # Map responses to the schema and normalize each response
     mapped_response_data = [
-        normalize(dict(
+        normalize_resp(dict(
             (col_name, cell_val)
             for col_name, cell_val in zip(schema, response)
             if cell_val != ''
@@ -161,7 +183,7 @@ def compress_grouped_responses(grouped_resps):
         for resp in responses:
             compressed.update(resp)
 
-        compressed_responses[address] = compressed
+        compressed_responses[address] = normalize_compressed_resp(compressed)
 
     return compressed_responses
 
