@@ -9,6 +9,11 @@ class MockWorksheet:
     def __init__(self, data):
         self._data = data
 
+        # Copy `Date of Contact` from `Timestamp`
+        self._data[0].append('Date of Contact')
+        for row in self._data[1:]:
+            row.append(row[self._data[0].index('Timestamp')])
+
     def row_values(self, row_idx):
         return self._data[row_idx - 1]
 
@@ -30,6 +35,10 @@ def test_format_responses():
 
     assert resp['Street Address'] == '1'
     assert resp['Timestamp'] == datetime.datetime(
+        month=10, day=4, year=2016,
+        hour=11, minute=47, second=55
+    )
+    assert resp['Date of Contact'] == datetime.datetime(
         month=10, day=4, year=2016,
         hour=11, minute=47, second=55
     )
@@ -58,12 +67,20 @@ def test_group_responses_by_address():
                     month=10, day=4, year=2016,
                     hour=15, minute=9, second=24
                 ),
+                'Date of Contact': datetime.datetime(
+                    month=10, day=4, year=2016,
+                    hour=15, minute=9, second=24
+                ),
                 'c': '1',
                 'd': '2',
             },
             {
                 'Street Address': 'address_one',
                 'Timestamp': datetime.datetime(
+                    month=12, day=1, year=2017,
+                    hour=6, minute=3, second=22
+                ),
+                'Date of Contact': datetime.datetime(
                     month=12, day=1, year=2017,
                     hour=6, minute=3, second=22
                 ),
@@ -75,6 +92,10 @@ def test_group_responses_by_address():
             {
                 'Street Address': 'address_two',
                 'Timestamp': datetime.datetime(
+                    month=10, day=4, year=2016,
+                    hour=11, minute=47, second=55
+                ),
+                'Date of Contact': datetime.datetime(
                     month=10, day=4, year=2016,
                     hour=11, minute=47, second=55
                 ),
@@ -104,6 +125,10 @@ def test_compress_grouped_responses():
                 month=12, day=1, year=2017,
                 hour=6, minute=3, second=22
             ),
+            'Date of Contact': datetime.datetime(
+                month=12, day=1, year=2017,
+                hour=6, minute=3, second=22
+            ),
             'b': 'x',
             'c': '5',
             'd': '6',
@@ -111,6 +136,10 @@ def test_compress_grouped_responses():
         "address_two": {
             'Street Address': 'address_two',
             'Timestamp': datetime.datetime(
+                month=10, day=4, year=2016,
+                hour=11, minute=47, second=55
+            ),
+            'Date of Contact': datetime.datetime(
                 month=10, day=4, year=2016,
                 hour=11, minute=47, second=55
             ),
@@ -144,7 +173,7 @@ def test_generate_reports():
             '\n' +
             'Num Dogs: 3'
         ,
-        "address_two":
+        'address_two':
             'Address: address_two\n' +
             '\n' +
             'Phone Call Dates: [2016-10-04 11:47:55]\n' +
@@ -152,3 +181,55 @@ def test_generate_reports():
             'Census Tract: 55.6'
         ,
     }
+
+
+def test_migrate_data_v1():
+    mock_wks = MockWorksheet([
+        ['Street Address', 'Timestamp',          'Type of Contact', 'Negative Compliance?', 'Negative?'],
+        ['address_one',    '10/4/2016 15:09:24', 'Phone Call',      '',                     '5'],
+        ['address_two',    '10/4/2016 11:47:55', 'Phone Call',      '4',                    ''],
+        ['address_three',  '12/1/2017 06:03:22', 'C.A.R.E. Letter', '',                     ''],
+    ])
+
+    formatted_resps = report_generator.format_responses(mock_wks)
+
+    assert formatted_resps == [
+        {
+            'Street Address': 'address_one',
+            'Timestamp': datetime.datetime(
+                month=10, day=4, year=2016,
+                hour=15, minute=9, second=24
+            ),
+            'Date of Contact': datetime.datetime(
+                month=10, day=4, year=2016,
+                hour=15, minute=9, second=24
+            ),
+            'Type of Contact': 'Phone Call',
+            'Negative?': '5',
+        },
+        {
+            'Street Address': 'address_two',
+            'Timestamp': datetime.datetime(
+                month=10, day=4, year=2016,
+                hour=11, minute=47, second=55
+            ),
+            'Date of Contact': datetime.datetime(
+                month=10, day=4, year=2016,
+                hour=11, minute=47, second=55
+            ),
+            'Type of Contact': 'Phone Call',
+            'Negative?': '4',
+        },
+        {
+            'Street Address': 'address_three',
+            'Timestamp': datetime.datetime(
+                month=12, day=1, year=2017,
+                hour=6, minute=3, second=22
+            ),
+            'Date of Contact': datetime.datetime(
+                month=12, day=1, year=2017,
+                hour=6, minute=3, second=22
+            ),
+            'Type of Contact': 'C.A.R.E. Letter',
+        },
+    ]

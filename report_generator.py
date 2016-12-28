@@ -69,6 +69,24 @@ def normalize_V1(resp):
     resp['Timestamp'] = convert_timestamp(resp['Timestamp'])
     resp['Date of Contact'] = convert_timestamp(resp['Date of Contact'])
 
+    updated_fields = {
+        'Negative Compliance?': 'Negative?',
+        'Registered Animals': 'Registered?',
+        'Spayed/Neutered Animals': 'Spayed/Neutered?',
+        'Vaccinated Animals': 'Vaccinated?',
+    }
+
+    # Migrate the updated fields over to the new version
+    for old_field, new_field in updated_fields.items():
+        if resp.get(old_field):
+            if resp.get(new_field):
+                raise Error("The old field and new field cannot both be present: ({old} -> {new})".format(
+                    old=old_field, new=new_field,
+                ))
+
+            resp[new_field] = resp[old_field]
+            del resp[old_field]
+
     return resp
 
 
