@@ -6,7 +6,7 @@ import re
 
 import service
 
-logger = logging.getLogger('das-care-contact-forms-logger')
+logger = logging.getLogger("das-care-contact-forms-logger")
 
 REPORT_TEMPLATE = [
     [
@@ -22,8 +22,8 @@ REPORT_TEMPLATE = [
         "Census Tract: {census_tract}",
     ],
     [
-        "Num Dogs: {num_dogs}",
-        "Num Cats: {num_cats}",
+        "Number of Dogs: {num_dogs}",
+        "Number of Cats: {num_cats}",
     ],
     [
         "Indicators: {indicators}",
@@ -60,8 +60,7 @@ def convert_timestamp(timestamp_string):
 
     return datetime.datetime(**dict(
         (key, int(val))
-        for key, val in match.groupdict().items()
-        if val
+        for key, val in match.groupdict().items() if val
     ))
 
 
@@ -92,7 +91,7 @@ def normalize_resp_V1(resp):
 
 def normalize_compressed_resp_V1(compressed_resp):
     # If the owner is in compliance, then all their animals are spayed, vaccinated, and registered
-    if compressed_resp.get('Compliance?') == "Yes":
+    if compressed_resp.get('Compliance?') == 'Yes':
         fields_to_be_updated = ['Spayed/Neutered?','Vaccinated?', 'Registered?']
 
         # Accumulate the number of animals and convert back to a string
@@ -117,7 +116,7 @@ normalize_compressed_resp = {
 }[service.forms_version]
 
 address_extractor = {
-    "V1": lambda resp: resp.get('Street Address')
+    'V1': lambda resp: resp.get('Street Address')
 }[service.forms_version]
 
 ##########################
@@ -191,37 +190,39 @@ def compress_grouped_responses(grouped_resps):
 def generate_reports(grouped_resps, compressed_grouped_resps):
     address_to_report = {}
 
+    format_date = lambda date: date.strftime("%m/%d/%y")
+
     for address in grouped_resps.keys():
         report_data = {
             key: value for key, value in dict(
                 address=address,
                 initial_contact_date=(lambda resps: None if len(resps) == 0 else resps[0])([
-                    resp["Timestamp"] for resp in grouped_resps[address]
-                    if resp["Type of Contact"] == "Initial Contact"
+                    format_date(resp['Date of Contact']) for resp in grouped_resps[address]
+                    if resp['Type of Contact'] == 'Initial Contact'
                 ]),
                 care_letter_date=(lambda resps: None if len(resps) == 0 else resps[0])([
-                    resp["Timestamp"] for resp in grouped_resps[address]
-                    if resp["Type of Contact"] == "C.A.R.E. Letter"
+                    format_date(resp['Date of Contact']) for resp in grouped_resps[address]
+                    if resp['Type of Contact'] == 'C.A.R.E. Letter'
                 ]),
                 list_of_phone_call_dates=(lambda dates: "[%s]" % ", ".join(dates) if dates else None)([
-                    str(resp["Timestamp"]) for resp in grouped_resps[address]
-                    if resp["Type of Contact"] == "Phone Call"
+                    format_date(resp['Date of Contact']) for resp in grouped_resps[address]
+                    if resp['Type of Contact'] == 'Phone Call'
                 ]),
                 list_of_mail_dates=(lambda dates: "[%s]" % ", ".join(dates) if dates else None)([
-                    str(resp["Timestamp"]) for resp in grouped_resps[address]
-                    if resp["Type of Contact"] == "Mail/Email"
+                    format_date(resp['Date of Contact']) for resp in grouped_resps[address]
+                    if resp['Type of Contact'] == 'Mail/Email'
                 ]),
-                census_tract=compressed_grouped_resps[address]["Census Tract"],
-                num_dogs=compressed_grouped_resps[address].get("How many dogs do they have?"),
-                num_cats=compressed_grouped_resps[address].get("How many cats do they have?"),
-                indicators=compressed_grouped_resps[address].get("Are there any indicators of animals?"),
-                owner_name=compressed_grouped_resps[address].get("Name"),
-                owner_phone_number=compressed_grouped_resps[address].get("Phone"),
-                owner_email=compressed_grouped_resps[address].get("Email"),
-                num_fixed_animals=compressed_grouped_resps[address].get("Spayed/Neutered?"),
-                num_vaccinated_animals=compressed_grouped_resps[address].get("Vaccinated?"),
-                num_registered_animals=compressed_grouped_resps[address].get("Registered?"),
-                is_in_compliance=compressed_grouped_resps[address].get("Compliance?")
+                census_tract=compressed_grouped_resps[address]['Census Tract'],
+                num_dogs=compressed_grouped_resps[address].get('How many dogs do they have?'),
+                num_cats=compressed_grouped_resps[address].get('How many cats do they have?'),
+                indicators=compressed_grouped_resps[address].get('Are there any indicators of animals?'),
+                owner_name=compressed_grouped_resps[address].get('Name'),
+                owner_phone_number=compressed_grouped_resps[address].get('Phone'),
+                owner_email=compressed_grouped_resps[address].get('Email'),
+                num_fixed_animals=compressed_grouped_resps[address].get('Spayed/Neutered?'),
+                num_vaccinated_animals=compressed_grouped_resps[address].get('Vaccinated?'),
+                num_registered_animals=compressed_grouped_resps[address].get('Registered?'),
+                is_in_compliance=compressed_grouped_resps[address].get('Compliance?')
             ).items() if value
         }
 
@@ -233,9 +234,9 @@ def generate_reports(grouped_resps, compressed_grouped_resps):
                 return None
 
         # Attempt to fill in each section, removing those where no successful substituion was made
-        report = "\n\n".join(filter(None, map(
+        report = '\n\n'.join(filter(None, map(
             # Attempt to fill in each section of the report, removing unsuccessful substitutions
-            lambda report_section: "\n".join(filter(
+            lambda report_section: '\n'.join(filter(
                 None,
                 map(attempt_substitution, report_section),
             )),

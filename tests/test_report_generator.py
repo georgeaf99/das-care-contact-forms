@@ -208,17 +208,17 @@ def test_generate_reports():
         'address_one':
             'Address: address_one\n' +
             '\n' +
-            'C.A.R.E. Letter Date: 2017-12-01 06:03:22\n' +
-            'Phone Call Dates: [2016-10-04 15:09:24]\n' +
+            'C.A.R.E. Letter Date: 12/01/17\n' +
+            'Phone Call Dates: [10/04/16]\n' +
             '\n' +
             'Census Tract: 44.5\n' +
             '\n' +
-            'Num Dogs: 3'
+            'Number of Dogs: 3'
         ,
         'address_two':
             'Address: address_two\n' +
             '\n' +
-            'Phone Call Dates: [2016-10-04 11:47:55]\n' +
+            'Phone Call Dates: [10/04/16]\n' +
             '\n' +
             'Census Tract: 55.6'
         ,
