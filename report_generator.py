@@ -249,6 +249,26 @@ def generate_reports(grouped_resps, compressed_grouped_resps):
     return address_to_report
 
 
+##############################
+# WRITING DATA TO DISK FUNCS #
+##############################
+
+def write_grouped_resps_to_disk(grouped_responses, directory=os.path.abspath("./grouped_responses/")):
+    for address, resps in grouped_responses.items():
+        file_name = "{0}.txt".format(re.sub(r'[\s]', '_', address.lower()))
+        file_path = "{directory}/{file_name}".format(directory=directory, file_name=file_name)
+
+        with open(file_path, 'w') as resps_file:
+            resps_file.write("\n\n###################################\n\n\n".join(
+                functools.reduce(
+                    lambda acc, entry: acc + "{0}: {1}\n".format(*entry),
+                    sorted(r.items()),
+                    "",
+                )
+                for r in resps
+            ))
+
+
 def write_reports_to_disk(reports, directory=os.path.abspath("./reports/reports_by_address/")):
     for address, rep in reports.items():
         # Format the file names from the address
@@ -259,6 +279,10 @@ def write_reports_to_disk(reports, directory=os.path.abspath("./reports/reports_
             report_file.write(rep)
 
 
+########
+# MAIN #
+########
+
 if __name__ == "__main__":
     responses_wks = service.main_spreadsheet.get_worksheet(0)
 
@@ -268,4 +292,5 @@ if __name__ == "__main__":
 
     reports = generate_reports(grouped_resps, compressed_grouped_resps)
 
+    write_grouped_resps_to_disk(grouped_resps)
     write_reports_to_disk(reports)
