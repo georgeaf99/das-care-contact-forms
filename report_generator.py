@@ -8,6 +8,7 @@ import re
 import service
 
 logger = logging.getLogger("das-care-contact-forms-logger")
+logger.info("Generating Reports for {0}".format(service.main_spreadsheet_name))
 
 REPORT_TEMPLATE = [
     [
@@ -258,6 +259,9 @@ def write_grouped_resps_to_disk(grouped_responses, directory=os.path.abspath("./
         file_name = "{0}.txt".format(re.sub(r'[\s]', '_', address.lower()))
         file_path = "{directory}/{file_name}".format(directory=directory, file_name=file_name)
 
+        if not os.path.exists(os.path.dirname(file_path)):
+            os.makedirs(os.path.dirname(file_path))
+
         with open(file_path, 'w') as resps_file:
             resps_file.write("\n\n###################################\n\n\n".join(
                 functools.reduce(
@@ -269,12 +273,19 @@ def write_grouped_resps_to_disk(grouped_responses, directory=os.path.abspath("./
             ))
 
 
-def write_reports_to_disk(reports, directory=os.path.abspath("./reports/reports_by_address/")):
+def write_reports_to_disk(reports, compressed_grouped_responses, directory=os.path.abspath("./reports/reports_by_address/")):
     for address, rep in reports.items():
         # Format the file names from the address
         file_name = "{0}.txt".format(re.sub(r'[\s]', '_', address.lower()))
-        file_path = "{directory}/{file_name}".format(directory=directory, file_name=file_name)
+        file_path = "{directory}/{census_tract}/{file_name}".format(
+            directory=directory,
+            census_tract="ct_{0}".format(compressed_grouped_responses[address]['Census Tract'].replace('.', '')),
+            file_name=file_name,
+        )
 
+        if not os.path.exists(os.path.dirname(file_path)):
+            os.makedirs(os.path.dirname(file_path))
+            
         with open(file_path, 'w') as report_file:
             report_file.write(rep)
 
@@ -293,4 +304,4 @@ if __name__ == "__main__":
     reports = generate_reports(grouped_resps, compressed_grouped_resps)
 
     write_grouped_resps_to_disk(grouped_resps)
-    write_reports_to_disk(reports)
+    write_reports_to_disk(reports, compressed_grouped_resps)
